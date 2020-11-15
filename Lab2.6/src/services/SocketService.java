@@ -8,15 +8,15 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.InvalidKeyException;
-import java.util.HashMap;
-import java.util.Map;
 
 import static commands.CommandRequest.*;
 public class SocketService extends Thread{
 
     private static ServerSocket serverSocket;
     private Socket socket;
-    static Map MAP_USERS = new HashMap();
+    private ObjectOutputStream output;
+    private ObjectInputStream input;
+    //static Map MAP_USERS = new HashMap();
 
     public SocketService(Socket socket) {
         this.socket = socket;
@@ -25,8 +25,8 @@ public class SocketService extends Thread{
 
     public void run() {
         try {
-            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+            output = new ObjectOutputStream(socket.getOutputStream());
+            input = new ObjectInputStream(socket.getInputStream());
             Object obj = null;
 
             while (true) {
@@ -47,9 +47,15 @@ public class SocketService extends Thread{
                     out.println("[payload] Unexpected data.");
                     break;
                 }
+                User user = null;
+                Nodes nodes = null;
+                new Thread(new ListenerSocket(socket, user, nodes)).start();
+/*
                 socket.close();
                 output.close();
                 input.close();
+                
+ */
             }
         } catch (IOException jb) {
             jb.printStackTrace();
@@ -64,7 +70,9 @@ public class SocketService extends Thread{
         private User user;
         private Nodes nodes;
 
-        public ListenerSocket(Socket socket) {
+        public ListenerSocket(Socket socket, User user, Nodes nodes) {
+            this.user = user;
+            this.nodes = nodes;
             try {
                 input = new ObjectInputStream(socket.getInputStream());
                 output = new DataOutputStream(socket.getOutputStream());

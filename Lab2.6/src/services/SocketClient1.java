@@ -15,18 +15,26 @@ import static java.lang.System.in;
 import static java.lang.System.out;
 
 public class SocketClient1 {
+    public static Socket socket;
 
-    public static void main(String[] args) {
-        new SocketClient1();
+
+    private ObjectOutputStream output;// = new ObjectOutputStream(socket.getOutputStream());
+    private ObjectInputStream input; // = new ObjectInputStream(socket.getInputStream());
+
+
+    public static void main(String[] args) throws IOException {
+       new SocketClient1();
     }
 
     public SocketClient1() {
         String testeServerName = "localhost";
-        int port = 4555;
+        int port = 4551;
 
         try {
             Socket socket = new Socket(testeServerName, port);
             String result = writerRead(socket, "\n\n");
+            output = new ObjectOutputStream(socket.getOutputStream());
+            input = new ObjectInputStream(socket.getInputStream());
             out.println(result);
             socket.close();
         } catch (UnknownHostException e) {
@@ -37,8 +45,8 @@ public class SocketClient1 {
     }
 
     private String writerRead(Socket socket, String message) throws IOException {
-        ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-        ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+        output = new ObjectOutputStream(socket.getOutputStream());
+        input = new ObjectInputStream(socket.getInputStream());
         output.writeObject(message);
         output.flush();
 
@@ -58,8 +66,13 @@ public class SocketClient1 {
             }else if (message.equals(Q)) {
                 socket.close();
             }
+
             receiveMessage();
         }
+
+
+
+
 
 
     }
@@ -85,8 +98,10 @@ public class SocketClient1 {
     }
 
     private void sendMessage(CommandRequest message) throws IOException {
-        Socket socket = new Socket();
-        ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+        output = new ObjectOutputStream(socket.getOutputStream());
+        input = new ObjectInputStream(socket.getInputStream());
+       // Socket socket = new Socket();
+        //ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
         //ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
         output.writeObject(message);
         output.flush();
@@ -95,35 +110,32 @@ public class SocketClient1 {
     private void receiveMessage() throws IOException {
         Socket socket = new Socket();
         //recebe os dados enviados pelo servidor
-        final DataInputStream input = new DataInputStream(socket.getInputStream());
+        //final DataInputStream input = new DataInputStream(socket.getInputStream());
 
         final Clientes clientes = new Clientes();
 
         //thread que fica escutando o servidor
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                String message;
-                try {
-                    while ((message = input.readUTF()) != null) {
+        Thread thread = new Thread(() -> {
+            String message;
+            try {
+                while ((message = input.readUTF()) != null) {
 
-                        if (message.equals(R)) {
-                            clientes.confirmarRegisto(message);
-                        } else if (message.equals(C)) {
-                            clientes.consulta(message);
-                        } else if (message.equals(D)) {
-                            clientes.remover(message);
-                        } else if (message.contains(L)) {
-                            clientes.lista();
+                    if (message.equals(R)) {
+                        clientes.confirmarRegisto(message);
+                    } else if (message.equals(C)) {
+                        clientes.consulta(message);
+                    } else if (message.equals(D)) {
+                        clientes.remover(message);
+                    } else if (message.contains(L)) {
+                        clientes.lista();
 
-                        }
                     }
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
                 }
-
+            } catch (IOException ioException) {
+                ioException.printStackTrace();
             }
-        };
+
+        });
         thread.start();
     }
 
